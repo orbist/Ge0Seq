@@ -628,9 +628,9 @@ void sysExInterpreter(byte* data, unsigned messageLength) {
         //PARAM 1 : the slot where the preset will be saved
         displayHdr();   
         display.println(F("SysEx seq data in..."));
-        delay(1000);
+        delay(750);
     
-        if (data[PARAM1] < 4) {
+        if (data[PARAM1] < 8) {
           writeSequence( data[PARAM1], 1 );
         }
         break;
@@ -640,9 +640,9 @@ void sysExInterpreter(byte* data, unsigned messageLength) {
         //PARAM 1 : number of the preset to load
         displayHdr(); 
         display.println(F("SysEx cmd data in..."));
-        delay(1000);
+        delay(750);
         
-        if (data[PARAM1] < 4) {
+        if (data[PARAM1] < 8) {
           readSequence( data[PARAM1], 0 );
         }
         break;

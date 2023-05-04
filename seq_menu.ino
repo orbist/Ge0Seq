@@ -344,13 +344,22 @@ void updateSelection() { // Called whenever encoder is turned
 
     case CV_OUT_PPQN_SET:
       if( menu == CV_OUT_PPQN_SET ) {
-        switch( mod( encoderPos, 2 ) ) {
+        switch( mod( encoderPos, 5 ) ) {
           case 0:
             cvClockOutPPQN = 1;
             break;
           case 1:
             cvClockOutPPQN = 4;
-            break;          
+            break;
+          case 2:
+            cvClockOutPPQN = 8;
+            break;
+          case 3:
+            cvClockOutPPQN = 12;
+            break;
+          case 4:
+            cvClockOutPPQN = 24;
+            break;
         }
       }
       // No break

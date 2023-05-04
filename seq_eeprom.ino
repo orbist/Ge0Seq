@@ -73,7 +73,7 @@ void eepromInit() {
     tick_per_step = my_div( cvClockPPQN, 4 );
 
     cvClockOutPPQN = EEPROM.read( EEPROM_CO_OFFSET );
-    if( cvClockOutPPQN > 4 ) { valid = 0; }
+    if( cvClockOutPPQN > 24 ) { valid = 0; }
 
     trigDuration = EEPROM.read( EEPROM_TD_OFFSET );
     if( trigDuration < 10 || trigDuration > 100 ) { valid = 0; }
