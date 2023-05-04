@@ -10,7 +10,7 @@ Configurable PPQN In and Out, with V/Oct scaling adjustment, and various configu
 
 Sequencer can contain up to 8 different 1-16 step sequences, with one active sequence at at point in time.
 
-Sequences and settings can be uploaded via MIDI SysEx messages from the companion Ge0sync Sequence Editor application.
+Sequences and settings can be uploaded via MIDI SysEx messages from the companion Ge0sync Sequence Editor application. https://github.com/orbist/Ge0Seq-Editor
 
 (c) Copyright Barry Whyte - Ge0synchronous Synths - 2023
 
