@@ -1,4 +1,7 @@
 # Ge0Seq
+
+https://geosyncsynth.com/
+
 MIDI to CV with Sequencer
 
 The source code and releases for the Ge0Seq sequencer used by the Ge0synchronous Synths TB-Seq Eurorack module and embedded in the Ge0sync Desktop semi-modular synthesisers.
