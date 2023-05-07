@@ -3,16 +3,19 @@
 void updateEncoderPos() {
     static int encoderA, encoderB, encoderA_prev;   
 
-    encoderA = digitalRead(ENC_A); 
-    encoderB = digitalRead(ENC_B);
+    encoderA = ( ENC_A_PIN & bit(ENC_A_BIT) ) == 0;
+    encoderB = ( ENC_B_PIN & bit(ENC_B_BIT) ) == 0;
+
+    //encoderA = digitalRead(ENC_A); 
+    //encoderB = digitalRead(ENC_B);
       
-    if((!encoderA) && (encoderA_prev)){ // A has gone from high to low 
-      if (highlightEnabled) { // Update encoder position
+    if( ( !encoderA ) && ( encoderA_prev ) ){ // A has gone from high to low 
+      if( is_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED ) ) { // Update encoder position
         encoderPosPrev = encoderPos;
         encoderB ? encoderPos++ : encoderPos--;  
       }
       else { 
-        highlightEnabled = true;
+        set_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED );
         encoderPos = 0;  // Reset encoder position if highlight timed out
         encoderPosPrev = 0;
       }
@@ -26,7 +29,7 @@ uint8_t tmp;
 
 void updateMenu() {  // Called whenever button is pushed
 
-  if( highlightEnabled ) { // Highlight is active, choose selection
+  if( is_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED ) ) { // Highlight is active, choose selection
     switch( menu ) {
 
       case SETTINGS:
@@ -238,16 +241,16 @@ void updateMenu() {  // Called whenever button is pushed
   }
   else { // Highlight wasn't visible, reinitialize highlight timer
     highlightTimer = millis();
-    highlightEnabled = true;
+    set_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED );
   }
   encoderPos = 0;  // Reset encoder position
   encoderPosPrev = 0;
 
   if( menu == EXIT ) {
-    highlightEnabled = false;
     menu = SETTINGS;    // Return to main screen and hide menu
+    set_false( &bitmap2, BIT2_HIGHLIGHT_ENABLED );
     display.clear();
-    displayCleared = 1;
+    set_true( &bitmap, BIT_DISPLAY_CLEARED );
   } else {
     updateSelection(); // Refresh menu screen
   }
@@ -664,9 +667,6 @@ void updateSelection() { // Called whenever encoder is turned
         display.println(F(" device is not yet"));
         display.println(F(" supported!"));
         delay(3000);
-        //display.clear();
-        //displayCleared = 1;
-        //highlightEnabled = 0;
         menu = SEQ_SETTINGS;
       }
       // No break if not MODIFY_SEQ 
@@ -785,7 +785,8 @@ void updateSelection() { // Called whenever encoder is turned
 // ------ PRIVATE ------ //
 
 void setHighlight(int menuItem, int numMenuItems) {
-  if ((mod(encoderPos, numMenuItems) == menuItem) &&  highlightEnabled ) {
+  if( ( mod( encoderPos, numMenuItems ) == menuItem ) &&
+      ( is_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED ) ) ) {
     display.setInvertMode(1);
   }
   else {

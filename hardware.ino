@@ -3,7 +3,14 @@
 void pinInit() {
 
   // Setup pins
-  pinMode( LED_PIN, OUTPUT );
+  // Pins D 2-5 are outputs, 6,7 inputs, default state for outputs is low.
+  // DDRD = ( 1 << ACCENT_DDR ) | ( 1 << GATE_DDR ) | ( 1 << CLOCK_DDR ) | ( 1 << TRIG_DDR );
+  // led pin to output, leave low for now;
+  DDRB |= ( 1 << LED_DDR );
+  NOP;
+
+  // Same code as above but slow
+  //pinMode( LED, OUTPUT );
   pinMode( GATE,    OUTPUT );
   pinMode( TRIG,    OUTPUT );
   pinMode( CLOCK,   OUTPUT );
@@ -11,6 +18,7 @@ void pinInit() {
 
   pinMode( CLOCK_IN, INPUT );
   pinMode( RUN_IN,   INPUT );
+
 
   digitalWrite( GATE,   LOW );
   digitalWrite( TRIG,   LOW );
@@ -21,8 +29,11 @@ void pinInit() {
 
 void encoderInit( void ) {
 
-  pinMode( ENC_A,   INPUT_PULLUP );
-  pinMode( ENC_B,   INPUT_PULLUP );
+  PORTC = ( 1 << ENC_A_DDR ) | ( 1 << ENC_B_DDR );
+  NOP;
+
+  //pinMode( ENC_A,   INPUT_PULLUP );
+  //pinMode( ENC_B,   INPUT_PULLUP );
   encButton.interval(25);
   encButton.attach( ENC_BUT, INPUT_PULLUP );
 
@@ -32,34 +43,41 @@ void encoderInit( void ) {
 // pin state transition helper - only react if state has changed from last known state
 inline bool pinHasChanged( uint8_t pin ) {
 
+  //bool current = (pin & bit( pin_bit )) == 0;
   bool current = digitalRead( pin );
-  bool last;
 
-  if( pin == RUN_IN ) {
-    last = last_run_state;
-  } else if( pin == CLOCK_IN ) {
-    last = last_clock_state;
-  }
+  switch( pin ) {
 
-  if( current != last ) {
-    if( current == 1) {
-      if( pin == RUN_IN ) {
-        last_run_state = 1;
-      } else if( pin == CLOCK_IN ) {
-        last_clock_state = 1;
+    case RUN_IN:
+     
+      if( current != is_true( &bitmap, BIT_LAST_RUN_STATE ) ) {
+        if( current == 1) {
+          set_true( &bitmap, BIT_LAST_RUN_STATE );
+        } else {
+          set_false( &bitmap, BIT_LAST_RUN_STATE );
+        }
+        return 1;
+      } else {
+        return 0;
       }
-    } else {
-      if( pin == RUN_IN ) {
-        last_run_state = 0;
-      } else if( pin == CLOCK_IN ) {
-        last_clock_state = 0;
+      break;
+
+    case CLOCK_IN:
+
+      if( current != is_true( &bitmap, BIT_LAST_CLK_STATE ) ) {
+        if( current == 1) {
+          set_true( &bitmap, BIT_LAST_CLK_STATE );
+        } else {
+          set_false( &bitmap, BIT_LAST_CLK_STATE );
+        }
+        return 1;
+      } else {
+        return 0;
       }
-    }
-    return 1;
-  } else {
-    return 0;
+      break;
   }
 }
+
 
 // initialise activeSeq on boot up
 void activeSeqInit() {
@@ -113,9 +131,11 @@ void dacInit() {
 void do_some_flash( uint8_t nof_flash ) {
 
   for( uint8_t i = 0; i < nof_flash; i++ ) {
-    digitalWrite( LED_PIN, HIGH );
+    LED_PORT |= ( 1 << LED_BIT );
+    //digitalWrite( LED, HIGH );
     delay( FAST_FLASH );
-    digitalWrite( LED_PIN, LOW );
+    LED_PORT &= ~( 1 << LED_BIT );
+    //digitalWrite( LED, LOW );
     delay( FAST_FLASH );
   }
   delay( PAUSE_FLASH );

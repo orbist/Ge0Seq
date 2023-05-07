@@ -10,14 +10,14 @@
 #define MAJOR_VERSION_STR "1"
 #define MINOR_VERSION_STR "5"
 #define FIX_VERSION_STR   "0"
-#define BUILD_VERSION_STR "2"
+#define BUILD_VERSION_STR "4"
 
 #define MAJOR_VERSION_INT 1
 #define MINOR_VERSION_INT 5
 #define FIX_VERSION_INT   0
-#define BUILD_VERSION_INT 2
+#define BUILD_VERSION_INT 4
 
-#define BUILD_DATE "230504"
+#define BUILD_DATE "230507"
 
 #define GEOSYNC_MANUF_ID 99
 
@@ -29,24 +29,94 @@
 
 // 0 - RX - arduino hw / MIDI default
 // 1 - TX - arduino hw
-#define ACCENT 2      // 4
-#define GATE 3        // 5
-#define TRIG 4        // 6
-#define CLOCK 5       // 11
-#define CLOCK_IN 6    // 12
-#define RUN_IN 7      // 13
+#define ACCENT 2              // DIP28 pin 4
+#define ACCENT_PORT PORTD
+#define ACCENT_BIT PD2
+#define ACCENT_PIN PIND
+#define ACCENT_DDR DDD2
+
+#define GATE 3              	// DIP28 pin 5
+#define GATE_PORT PORTD
+#define GATE_BIT PD3
+#define GATE_PIN PIND
+#define GATE_DDR DDD3
+
+#define TRIG 4                // DIP28 pin 6
+#define TRIG_PORT PORTD
+#define TRIG_BIT PD4
+#define TRIG_PIN PIND
+#define TRIG_DDR DDD4
+
+#define CLOCK 5               // DIP28 pin 11
+#define CLOCK_PORT PORTD
+#define CLOCK_BIT PD5
+#define CLOCK_PIN PIND
+#define CLOCK_DDR DDD5
+
+#define CLOCK_IN 6            // DIP28 pin 12
+#define CLOCK_IN_PORT PORTD
+#define CLOCK_IN_BIT PD6
+#define CLOCK_IN_PIN PIND
+#define CLOCK_IN_DDR DDD6
+
+#define RUN_IN 7              // DIP28 pin 13
+#define RUN_IN_PORT PORTD
+#define RUN_IN_BIT PD7
+#define RUN_IN_PIN PIND
+#define RUN_IN_DDR DDD7
+
 // 8 unused
-#define LED_PIN 9     // 15 
-#define DAC_CS 10     // 16  
+
+#define LED 9             // DIP28 pin 15 
+#define LED_PORT PORTB
+#define LED_BIT PB1
+#define LED_PIN PINB
+#define LED_DDR DDB1
+
+#define DAC_CS 10             // DIP28 pin 16 - handled by dac library
+
 // 11 MOSI
 // 12 unused
 // 13 SCK
-#define ENC_A 15      // 23  A0
-#define ENC_B 14      // 24  A1
-#define ENC_BUT 16    // 25  A2
+
+#define ENC_B 14              // DIP28 pin 24 - Arduino A0
+#define ENC_B_PORT PORTC
+#define ENC_B_BIT PC0
+#define ENC_B_PIN PINC
+#define ENC_B_DDR DDC0
+
+#define ENC_A 15              // DIP28 pin 23 - Arduino A1
+#define ENC_A_PORT PORTC
+#define ENC_A_BIT PC1
+#define ENC_A_PIN PINC
+#define ENC_A_DDR DDC1
+
+#define ENC_BUT 16            // DIP28 pin 25 - Ardiono A2
+#define ENC_BUT_PORT PORTC
+#define ENC_BUT_BIT PC2
+#define ENC_BUT_PIN PINC
+#define ENC_BUT_DDR DDC2
+
 // 17 unused
 #define DISP_SDA 18   // 27  A4
 #define DISP_SCL 19   // 28  A5
+
+
+// ------ Bitmap packed globals ------ //
+
+// Is the display currently blank
+
+#define BIT_DISPLAY_CLEARED 0
+#define BIT_DELTA_UP        1     // boolean, up or down slide
+#define BIT_LAST_RUN_STATE  2     // Store last state of the CV RUN input - for change detection
+#define BIT_LAST_CLK_STATE  3     // Store last state of the CV Clock input - for change detection
+#define BIT_SLIDING         4     // we are mid slide
+#define BIT_PLAYING         5     // sequence is running via MIDI
+#define BIT_STARTING        6     // start has been recieved about to be playing
+#define BIT_CV_PLAYING      7     // sequence is running via CV clock
+
+#define BIT2_HIGHLIGHT_ENABLED 0  // Flag indicating whether highighting should be enabled on menu
+#define BIT2_WAS_SLIDING       1  // was the last note a slide, so no trigger on this one
 
 
 // ------ Note Priority values ------ //
@@ -206,6 +276,7 @@ enum Menu {
 #define MOD_DURATION_MAX 5000 // 5s
 
 
+#define NOP __asm__ __volatile__ ("nop\n\t")
 
 
 #endif

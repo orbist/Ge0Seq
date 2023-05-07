@@ -337,7 +337,7 @@ void clearSequence( uint8_t slot, bool hdr ) {
     delay(2000);
     if( menu == SETTINGS ) {
       display.clear();
-      displayCleared = 1;
+      set_true( &bitmap, BIT_DISPLAY_CLEARED );
     }
   }
 }
@@ -462,7 +462,7 @@ void readSequence( uint8_t slot, bool hdr ) {
     delay(2000);
     if( menu == SETTINGS ) {
       display.clear();
-      displayCleared = 1;
+      set_true( &bitmap, BIT_DISPLAY_CLEARED );
     }
   }
 }

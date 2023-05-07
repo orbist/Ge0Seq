@@ -77,7 +77,8 @@ void setup() {
   dacInit();                      // DAC configuration
   activeSeqInit();                // Read in last activeSeq if defined
   setNotePriorityText();          // ensure menu has the right text decode
-  digitalWrite( LED_PIN, HIGH );  // Setup done, ready to go, turn the RDY LED on
+  LED_PORT |= ( 1 << LED_BIT );          // Setup done, ready to go, turn the RDY LED on
+  //digitalWrite( LED, HIGH );  
 
   #ifdef DEBUG
     debugHome();                  // Debug dump of the sequencer slots & EEPROM settings
@@ -97,36 +98,34 @@ void loop() {
   static unsigned long clock_timer = 0, clock_timeout = 0, mod_timer = 0, display_timer = 0;
   static unsigned int clock_count = 0, tick_count = 0, cv_clock_count = 0;
 
-  static bool cv_playing = 0;                  // sequence controlled by CV clock not MIDI
-  static bool playing = 0;                     // sequence is running
-  static bool starting = 0;                    // start has been recieved about to be playing
-
   // make sure we are showing something
   // either the main summary screen, or the 'playing screen'
   // display_timer user to clear ERR msgs after 3s
 
-  if( displayCleared || display_timer > 0 ) {
-    if( playing || cv_playing ) {
+  if( is_true( &bitmap, BIT_DISPLAY_CLEARED ) || display_timer > 0 ) {
+    if( is_true( &bitmap, BIT_PLAYING ) || is_true( &bitmap, BIT_CV_PLAYING ) ) {
       if( ( millis() - display_timer )  > 3000 ) {
-        displayMsgPlaying( cv_playing );
+        displayMsgPlaying( is_true( &bitmap, BIT_CV_PLAYING ) );
         display_timer = 0;
-        displayCleared = 0;
+        set_false( &bitmap, BIT_DISPLAY_CLEARED );
       }
-    } else if( displayCleared ) {
+    } else if( is_true( &bitmap, BIT_DISPLAY_CLEARED ) ) {
       displayHomePage();
-      displayCleared = 0;
+      set_false( &bitmap, BIT_DISPLAY_CLEARED );
     }
   }
 
   // Set trigger low after 20 msec  
   if( ( trigTimer > 0 ) && ( millis() - trigTimer > trigDuration ) ) {
-    digitalWrite( TRIG, LOW );  
+    TRIG_PORT &= ~( 1 << TRIG_BIT );
+    //digitalWrite( TRIG, LOW );  
     trigTimer = 0;
   }
 
    // Set clock pulse low after 20 msec
   if( ( clock_timer > 0 ) && ( millis() - clock_timer > clockDuration ) ) {
-    digitalWrite( CLOCK, LOW ); 
+    CLOCK_PORT &= ~( 1 << CLOCK_BIT );
+    //digitalWrite( CLOCK, LOW ); 
     clock_timer = 0;
   }
 
@@ -144,43 +143,45 @@ void loop() {
   if( encButton.fell() ) { updateMenu(); } // 
 
   // Check if menu highlighting timer expired, and remove highlighting if so
-  if( highlightEnabled && ( ( millis() - highlightTimer ) > HIGHLIGHT_TIMEOUT ) ) {  
-    highlightEnabled = false;
+  if( is_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED ) && ( ( millis() - highlightTimer ) > HIGHLIGHT_TIMEOUT ) ) {  
+    set_false( &bitmap2, BIT2_HIGHLIGHT_ENABLED );
     menu = SETTINGS;    // Return to main screen and hide menu
     display.clear();
-    displayCleared = 1;
+    set_true( &bitmap, BIT_DISPLAY_CLEARED );
   }
 
   // Check if we have CV RUN trigger
   if( pinHasChanged( RUN_IN ) ) {
     // pin state has changed
-    if( last_run_state ) {
+    if( is_true( &bitmap, BIT_LAST_RUN_STATE ) ) {
       // pin has gone HIGH
-      if( cv_playing ) {
+      if( is_true( &bitmap, BIT_CV_PLAYING ) ) {
         // were playing so stop
-        cv_playing = 0;
+        set_false( &bitmap, BIT_CV_PLAYING );
         cv_clock_count = 0;
         dac.setVoltageA( 0 );
         dac.updateDAC();
-        digitalWrite( GATE, LOW );
+        GATE_PORT &= ~( 1 << GATE_BIT );
+        NOP;
+        //digitalWrite( GATE, LOW );
 
-        displayCleared = 1;
+        set_true( &bitmap, BIT_DISPLAY_CLEARED );
         display.clear();
 
       } else {
         // start playing on next CV clock tick
-        if( !playing ) {
+        if( !is_true( &bitmap, BIT_PLAYING ) ) {
           // check MIDI isn't already playing
           step_i = STEP_START;
-          cv_playing = 1;
-          starting = 1;
+          set_true( &bitmap, BIT_CV_PLAYING );
+          set_true( &bitmap, BIT_STARTING );
           cv_clock_count = 0;
           tick_count = 0;
           step_length = 0;
           tick_per_step = my_div( cvClockPPQN, 4 );
           if( tick_per_step == 1 ) { activeSeq.slide_type = FULL; } // make sure we sort of slide
           slide_div = isSlidePossible();
-          displayMsgPlaying( cv_playing );
+          displayMsgPlaying( is_true( &bitmap, BIT_CV_PLAYING ) );
         } else if( display_timer == 0 ) {
           // got CV run but MIDI playing show error for a bit
           display.println();
@@ -194,14 +195,14 @@ void loop() {
   // Main CV Clock loop
   if( pinHasChanged( CLOCK_IN ) ) {
     // we have a state change, if gone HIGH then its a new tick
-    if( last_clock_state ) {
+    if( is_true( &bitmap, BIT_LAST_CLK_STATE ) ) {
       // new tick
-      if( starting && cv_playing ) {
+      if( is_true( &bitmap, BIT_STARTING ) && is_true( &bitmap, BIT_CV_PLAYING ) ) {
         // first tick after run, so play
-        starting = 0;
+        set_false( &bitmap, BIT_STARTING );
         
         playNextNote();
-      } else if( cv_playing ) {
+      } else if( is_true( &bitmap, BIT_CV_PLAYING ) ) {
         // inc/dec counters for this tick
         cv_clock_count++;   // count the ticks up to PPQN
         tick_count++;       // count the ticks per step
@@ -214,12 +215,16 @@ void loop() {
           if( cv_step_length == 0 ) {
             //we have reached the end of this note
             //turn off accent as we are on to a new step, will get turned on if needed by playNextNote
-            digitalWrite( ACCENT, LOW );
+            ACCENT_PORT &= ~( 1 << ACCENT_BIT );
+            //digitalWrite( ACCENT, LOW );
             // because we don't have interim ticks with 4 PPQN, turn off gate
             // need to delay after this or it turns on again immediately in playNextNote
             // can modify gateDelay via menu - approx 500 us seems about right
-            if( tick_per_step == 1 && !sliding ) { 
-              digitalWrite( GATE, LOW ); 
+            if( tick_per_step == 1 && !is_true( &bitmap, BIT_SLIDING ) ) {
+              GATE_PORT &= ~( 1 << GATE_BIT );
+              NOP;
+              
+              //digitalWrite( GATE, LOW ); 
               delayMicroseconds( gateDelay ); 
             }
             playNextNote();  // increments step_i at end of function
@@ -235,13 +240,15 @@ void loop() {
         if( cv_clock_count == cvClockPPQN ) {
           cv_clock_count = 0;
 
-        // turn off gate one tick before next step if we aren't sliding and have interim ticks
-        } else if( !sliding && cv_step_length == 1 && tick_per_step != 1 ) {
-          digitalWrite( GATE, LOW );
+        // turn off gate one tick before next step if we aren't is_true( BIT_SLIDING ) and have interim ticks
+        } else if( !is_true( &bitmap, BIT_SLIDING ) && cv_step_length == 1 && tick_per_step != 1 ) {
+          GATE_PORT &= ~( 1 << GATE_BIT );
+          NOP;
+          //digitalWrite( GATE, LOW );
 
         // if we are sliding, check if we are into the slide ticks 
         // (based on slide_type) and inc/dec voltage to slide up/down
-        } else if( sliding && slideVoltStart != 0 && ( slide_div >= cv_step_length ) ) {
+        } else if( is_true( &bitmap, BIT_SLIDING ) && slideVoltStart != 0 && ( slide_div >= cv_step_length ) ) {
           unsigned int mV = slideVoltStart; //safety
           uint8_t deltaFactor = 0;
 
@@ -251,7 +258,7 @@ void loop() {
             deltaFactor = cv_step_length;
           }
 
-          if( deltaUp ) {
+          if( is_true( &bitmap, BIT_DELTA_UP ) ) {
             mV = ( unsigned int )( ( float )( slideVoltStart + ( deltaFactor * delta ) ) );
           } else {
             mV = ( unsigned int )( ( float )( slideVoltStart - ( deltaFactor * delta ) ) );
@@ -267,7 +274,7 @@ void loop() {
 
   // Main MIDI loop - only respond to MIDI when not already playing via CV RUN/CLOCK IN
 
-  if( MIDI.read() && !cv_playing ) {
+  if( MIDI.read() && !is_true( &bitmap, BIT_CV_PLAYING ) ) {
     
     byte type = MIDI.getType();
     switch( type ) {
@@ -302,8 +309,8 @@ void loop() {
       case midi::Start:
         
         step_i = STEP_START;
-        playing = 1;        // we are playing a sequence
-        starting = 1;       // set so we wait for next tick to actually start the seq
+        set_true( &bitmap, BIT_PLAYING );        // we are playing a sequence
+        set_true( &bitmap, BIT_STARTING );       // set so we wait for next tick to actually start the seq
 
         clock_count = 0;    // number of ticks since last quarter note (24 ppqn)
         tick_count = 0;     // one step is 1/16 note - so tick_count up to 6 (6 ppstep)
@@ -314,24 +321,27 @@ void loop() {
 
       case midi::Stop:
 
-        playing = 0; // we stop playing a sequence
+        set_false( &bitmap, BIT_PLAYING ); // we stop playing a sequence
         dac.setVoltageA( 0 );
         dac.updateDAC();
-        digitalWrite( GATE, LOW );
-        displayCleared = 1;
+        GATE_PORT &= ~( 1 << GATE_BIT );
+        //digitalWrite( GATE, LOW );
+        set_true( &bitmap, BIT_DISPLAY_CLEARED );
         display.clear();
         break;
 
       case midi::Clock:
 
         if( clock_count == 0 ) {
-          digitalWrite( CLOCK, HIGH );  // Start clock pulse
+          CLOCK_PORT |= ( 1 << CLOCK_BIT );
+          NOP;
+          //digitalWrite( CLOCK, HIGH );  // Start clock pulse
           clock_timer = millis();
         }
 
-        if( starting ) {
-          starting = 0; // we got the first tick after start command, lets go!
-          displayMsgPlaying( cv_playing );
+        if( is_true( &bitmap, BIT_STARTING ) ) {
+          set_false( &bitmap, BIT_STARTING ); // we got the first tick after start command, lets go!
+          displayMsgPlaying( is_true( &bitmap, BIT_CV_PLAYING ) );
           playNextNote();
         }
 
@@ -349,11 +359,13 @@ void loop() {
         // note count has reached the end of a step (1/16th note)
         if( tick_count == 6 ) { 
           tick_count = 0; // reset
-          if( playing ) {
+          if( is_true( &bitmap, BIT_PLAYING ) ) {
             if( step_length == 0 ) {
               //we have reached the end of this note
               // turn off accent as we are on to a new step, will get turned on if needed by playNextNote
-              digitalWrite( ACCENT, LOW );
+              ACCENT_PORT &= ~( 1 << ACCENT_BIT );
+              NOP;
+              //digitalWrite( ACCENT, LOW );
               playNextNote();  // increments step_i at end of function
             } else {
               // we haven't reach the end of this note
@@ -365,16 +377,18 @@ void loop() {
         }
         
         // turn off gate one tick before next step if we aren't sliding
-        if( playing && !sliding && step_length == 1 ) {
-          digitalWrite( GATE, LOW );
+        if( is_true( &bitmap, BIT_PLAYING ) && !is_true( &bitmap, BIT_SLIDING ) && step_length == 1 ) {
+          GATE_PORT &= ~( 1 << GATE_BIT );
+          NOP;
+          //digitalWrite( GATE, LOW );
 
         // if we are sliding, check if we are into the slide ticks 
         // (based on slide_type) and inc/dec voltage to slide up/down
-        } else if( playing && sliding && slideVoltStart != 0 && ( slide_div >= step_length ) ) {
+        } else if( is_true( &bitmap, BIT_PLAYING ) && is_true( &bitmap, BIT_SLIDING ) && slideVoltStart != 0 && ( slide_div >= step_length ) ) {
           unsigned int mV = slideVoltStart; //safety
           uint8_t deltaFactor = slide_div - step_length; 
           
-          if( deltaUp ) {
+          if( is_true( &bitmap, BIT_DELTA_UP ) ) {
             mV = ( unsigned int )( ( float )( slideVoltStart + ( deltaFactor * delta ) ) );
           } else {
             mV = ( unsigned int )( ( float )( slideVoltStart - ( deltaFactor * delta ) ) );
@@ -431,7 +445,9 @@ void playTopNote() {
     playNote( topNote );
   } else {
     // All notes are off, turn off gate
-    digitalWrite( GATE, LOW );
+    GATE_PORT &= ~( 1 << GATE_BIT );
+    NOP;
+    //digitalWrite( GATE, LOW );
   }
 }
 
@@ -450,7 +466,9 @@ void playBottomNote() {
     playNote( bottomNote );
   } else {
     // All notes are off, turn off gate
-    digitalWrite( GATE, LOW );
+    GATE_PORT &= ~( 1 << GATE_BIT );
+    NOP;
+    //digitalWrite( GATE, LOW );
   }
 }
 
@@ -464,7 +482,9 @@ void playLastNote() {
       return;
     }
   }
-  digitalWrite( GATE, LOW );  // All notes are off
+  GATE_PORT &= ~( 1 << GATE_BIT );
+  NOP;
+  //digitalWrite( GATE, LOW );  // All notes are off
 }
 
 
@@ -483,10 +503,10 @@ void playNextNote() {
   cv_step_length = ( my_div( step_length, 6 ) * tick_per_step );    // same, but for CV ticks
 
   if( !rest ) {
-    if( accent ) { digitalWrite( ACCENT, HIGH ); }
+    if( accent ) { ACCENT_PORT |= ( 1 << ACCENT_BIT ); NOP; } //digitalWrite( ACCENT, HIGH ); }
   
     if( slide ) {
-      sliding = 1;
+      set_true( &bitmap, BIT_SLIDING );
       if( slide_div > 1 ) {
         // slide requested, so save the start, end and delta values
         
@@ -502,11 +522,11 @@ void playNextNote() {
         if( slideVoltStart > slideVoltEnd ) {
           // slide down
           delta = (slideVoltStart - slideVoltEnd ) / slide_div;
-          deltaUp = 0;
+          set_false( &bitmap, BIT_DELTA_UP );
         } else if( slideVoltStart < slideVoltEnd ) {
           //slide up
           delta = (slideVoltEnd - slideVoltStart ) / slide_div;
-          deltaUp = 1;
+          set_true( &bitmap, BIT_DELTA_UP );
         } else {
           // same note
           slideVoltStart = 0;
@@ -518,14 +538,16 @@ void playNextNote() {
       slideVoltStart = 0;
       slideVoltEnd = 0;
       delta = 0;
-      sliding = 0;
+      set_false( &bitmap, BIT_SLIDING );
     } 
     playNote( noteMsg );
 
   } else { // rest
-
-    digitalWrite( GATE, LOW );
-    delayMicroseconds( gateDelay );
+    GATE_PORT &= ~( 1 << GATE_BIT );
+    NOP;
+    //digitalWrite( GATE, LOW );
+    // FIX ME ???
+    //delayMicroseconds( gateDelay );
     playNote( 0 );
   }
 
@@ -542,9 +564,22 @@ void playNote( uint8_t noteMsg ) {
   unsigned int mV;
 
   if( noteMsg != 0 ) {
-    digitalWrite( GATE, HIGH );
-    digitalWrite( TRIG, HIGH );
-    trigTimer = millis();
+    // even if sliding, no harm in setting gate on 
+    GATE_PORT |= ( 1 << GATE_BIT );
+
+    // if the last note was a slide, don't send a trigger
+    if( is_true( &bitmap2, BIT2_WAS_SLIDING ) ) {
+      set_false( &bitmap2, BIT2_WAS_SLIDING );
+    } else {
+      // otherwise send a trigger
+      TRIG_PORT |= ( 1 << TRIG_BIT );
+      trigTimer = millis();
+    }
+
+    //if the current note is a slide, then store that now
+    if( is_true( &bitmap, BIT_SLIDING ) ) {
+      set_true( &bitmap2, BIT2_WAS_SLIDING );
+    }
   }
 
   if((float)( noteMsg * NOTE_SF ) - OCT_SF < 0 ) {
@@ -630,7 +665,7 @@ void sysExInterpreter(byte* data, unsigned messageLength) {
         display.println(F("SysEx seq data in..."));
         delay(750);
     
-        if (data[PARAM1] < 8) {
+        if (data[PARAM1] < 9 ) {
           writeSequence( data[PARAM1], 1 );
         }
         break;
@@ -642,7 +677,7 @@ void sysExInterpreter(byte* data, unsigned messageLength) {
         display.println(F("SysEx cmd data in..."));
         delay(750);
         
-        if (data[PARAM1] < 8) {
+        if (data[PARAM1] < 9) {
           readSequence( data[PARAM1], 0 );
         }
         break;
@@ -736,7 +771,7 @@ void sysExInterpreter(byte* data, unsigned messageLength) {
         }
         // last of batch so make sure we got back to menu
         // or else reboot being called by SET_MIDI_CH
-        displayCleared = 1;
+        set_true( &bitmap, BIT_DISPLAY_CLEARED );
         break;
       }
       case SET_MOD_CC : {

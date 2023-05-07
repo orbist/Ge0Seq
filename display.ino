@@ -4,7 +4,7 @@ void displayInit() {
   char ver[10];
 
   display.begin( &Adafruit128x64, SCREEN_ADDRESS );
-  display.setFont(Adafruit5x7);
+  display.setFont( Adafruit5x7 );
 
   sprintf_P( ver, PSTR( "v%s.%s.%s.%s"), MAJOR_VERSION_STR, 
                                          MINOR_VERSION_STR,
@@ -27,7 +27,7 @@ void displayInit() {
   delay(3000);
   
   display.clear();
-  displayCleared = 1;
+  set_true( &bitmap, BIT_DISPLAY_CLEARED );
 }
 
 
@@ -62,16 +62,18 @@ void displayHomeHdr() {
 
 void displayTestComms( bool match ) {
   displayHdr();
-  display.println(F("TestCom SUCCESS!"));
+  display.println(F("Communication test:"));
+  display.println(F("SUCCESS!"));
   display.println();
   if( !match ) {
     display.println(F("WARNING!!!"));
-    display.println(F("FW and app version"));
-    display.println(F("mismatch!"));
+    display.println(F("Version mismatch!"));
+  } else {
+    display.println(F("Versions match!"));
   }
   delay(4000);
   display.clear();
-  displayCleared = 1;
+  set_true( &bitmap, BIT_DISPLAY_CLEARED );
 }
 
 
@@ -119,6 +121,7 @@ void displayMsgPlaying( bool cv_play ) {
     display.println();
     display.print(F("Sequence  "));
     display.println( activeSlot );
+    display.println();
     display.print(F("via "));
     if( cv_play ) {
       display.println(F("CV Clock..."));
@@ -146,7 +149,7 @@ void displayDONE( bool home ) {
   
   if( home ) {
     display.clear();
-    displayCleared = 1;
+    set_true( &bitmap, BIT_DISPLAY_CLEARED );
   }
 }
 

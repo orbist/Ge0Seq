@@ -36,12 +36,13 @@ uint8_t cv_step_length = 1;           // the cv step length based on cv ppqn
 
 // ------ Sliding Variables ------ //
 
-bool  sliding = 0;                    // we are mid slide
+
 float slideVoltStart = 0.0f;             // sliding from this voltage to...
 float slideVoltEnd = 0.0f;               // ...this voltage
 float delta = 0.0f;                   // the delta mv between start and end slide
-bool  deltaUp = 1;                    // boolean, up or down slide
 uint8_t slide_div = 1;                // is slide possible - calculate divider as needed
+
+
 
 // ------ MIDI Variables ------ //
 
@@ -65,11 +66,8 @@ uint8_t       clockDuration = 20;     // Timeour for clock CV out to turn off
 
 uint8_t tick_per_step = 1;            // how many ticks do we have per step - based on CV Clock In PPQN
 
-bool last_run_state = 0;              // Store last state of the CV RUN input - for change detection
-bool last_clock_state = 0;            // Store last state of the CV Clock input - for change detection
-
 // ------ Menu Variables ------ //
-bool highlightEnabled = 0;            // Flag indicating whether highighting should be enabled on menu
+//bool highlightEnabled = 0;            
 unsigned long int highlightTimer = 0;  
 
 // globals where text used in menu, but encoded to numbers in eeprom
@@ -79,9 +77,13 @@ uint8_t saveSlotMenu;
 char priorityMenu[4];
 char fresetMenu[3];
 
-// ------ Misc ------ //
+// ------ Packed global booleans - bitmap ------ //
+volatile uint8_t bitmap = 0b00000010;
+volatile uint8_t bitmap2 = 0b00000000;
 
-bool displayCleared = 0;              // Is the display currently blank
+inline bool   is_true( uint8_t *bitmap, uint8_t bit ) { return( *bitmap & ( 1 << bit )); }
+inline void  set_true( uint8_t *bitmap, uint8_t bit ) { *bitmap |= ( 1 << bit ); }
+inline void set_false( uint8_t *bitmap, uint8_t bit ) { *bitmap &= ~( 1 << bit ); }
 
 // ------ Inline helper functions ------ //
 
