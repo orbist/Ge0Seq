@@ -7,10 +7,9 @@ void pinInit() {
   // DDRD = ( 1 << ACCENT_DDR ) | ( 1 << GATE_DDR ) | ( 1 << CLOCK_DDR ) | ( 1 << TRIG_DDR );
   // led pin to output, leave low for now;
   DDRB |= ( 1 << LED_DDR );
+  DDRB |= ( 1 << LED_BOOT_DDR );
   NOP;
 
-  // Same code as above but slow
-  //pinMode( LED, OUTPUT );
   pinMode( GATE,    OUTPUT );
   pinMode( TRIG,    OUTPUT );
   pinMode( CLOCK,   OUTPUT );
@@ -19,7 +18,8 @@ void pinInit() {
   pinMode( CLOCK_IN, INPUT );
   pinMode( RUN_IN,   INPUT );
 
-
+  pinMode( REV_IN, INPUT );
+  
   digitalWrite( GATE,   LOW );
   digitalWrite( TRIG,   LOW );
   digitalWrite( CLOCK,  LOW );
@@ -29,13 +29,15 @@ void pinInit() {
 
 void encoderInit( void ) {
 
+  // Set encoder A and B as INPUT_PULLUP
   PORTC = ( 1 << ENC_A_DDR ) | ( 1 << ENC_B_DDR );
   NOP;
 
   //pinMode( ENC_A,   INPUT_PULLUP );
   //pinMode( ENC_B,   INPUT_PULLUP );
-  encButton.interval(25);
   encButton.attach( ENC_BUT, INPUT_PULLUP );
+  encButton.interval(5);
+  
 
 }
 

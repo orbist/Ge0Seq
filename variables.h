@@ -68,7 +68,9 @@ uint8_t tick_per_step = 1;            // how many ticks do we have per step - ba
 
 // ------ Menu Variables ------ //
 //bool highlightEnabled = 0;            
-unsigned long int highlightTimer = 0;  
+unsigned long int highlightTimer = 0;
+unsigned long int encoderTimer = 0;
+
 
 // globals where text used in menu, but encoded to numbers in eeprom
 uint8_t activeSlotMenu;

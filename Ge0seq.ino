@@ -64,7 +64,11 @@
 void setup() {
 
   Serial.begin( 31250 );
-
+  if( PINC & ( 1 << REV_IN_BIT) ) {
+    // REV_IN_PIN is high on REV2, set boot LED on
+    LED_BOOT_PORT |= ( 1 << LED_BOOT_BIT );  
+  }
+  
   #ifdef DEBUG
    debugStart();
   #endif
@@ -77,8 +81,9 @@ void setup() {
   dacInit();                      // DAC configuration
   activeSeqInit();                // Read in last activeSeq if defined
   setNotePriorityText();          // ensure menu has the right text decode
-  LED_PORT |= ( 1 << LED_BIT );          // Setup done, ready to go, turn the RDY LED on
-  //digitalWrite( LED, HIGH );  
+  LED_BOOT_PORT &= ~( 1 << LED_BOOT_BIT );  // And turn off the boot LED if we have one then...
+  LED_PORT |= ( 1 << LED_BIT );             // Setup done, ready to go, turn the RDY LED on
+  
 
   #ifdef DEBUG
     debugHome();                  // Debug dump of the sequencer slots & EEPROM settings
@@ -782,9 +787,8 @@ void sysExInterpreter(byte* data, unsigned messageLength) {
         break;
       }
       case TEST_COMMS : {
-        if( data[PARAM1] == MAJOR_VERSION_INT &&
-            data[PARAM2] == MINOR_VERSION_INT &&
-            data[PARAM3] == FIX_VERSION_INT ) {
+        if( data[PARAM1] == MAJOR_VERSION_EEPROM &&
+            data[PARAM2] == MINOR_VERSION_EEPROM ) {
           // Just check first 3, the build version shouldn't invalidate the settings etc
           // If things are changed in the comms / settings, increment at least FIX version
           displayTestComms( 1 );

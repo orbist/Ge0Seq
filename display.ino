@@ -155,12 +155,11 @@ void displayDONE( bool home ) {
 
 
 void displayAbout() {
-  char ver[7];
+  char ver[7], ever[5];
       
-  sprintf_P( ver, PSTR( "v%s.%s.%s"), MAJOR_VERSION_STR, 
-                                      MINOR_VERSION_STR,
-                                      FIX_VERSION_STR );
-
+  sprintf_P( ver, PSTR( "v%s.%s.%s" ), MAJOR_VERSION_STR, 
+                                       MINOR_VERSION_STR,
+                                       FIX_VERSION_STR );
   display.setCursor(0,0);
   display.setInvertMode(0);
   display.println(F("        ABOUT"));
@@ -173,10 +172,13 @@ void displayAbout() {
   display.print(F("Build date: "));
   display.println(F(BUILD_DATE));
   display.print(F("EEPROM type:"));
-  display.println(ver);
+
+  sprintf_P( ever, PSTR( "v%s.%s" ), MAJOR_VER_EEPROM_STR,
+                                     MINOR_VER_EEPROM_STR );
+  display.println(ever);
   display.println();
   display.println(F("(c)Ge0sync Synth 2023"));
-  delay(10000);
+  delay(5000);
 
 }
 

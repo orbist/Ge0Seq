@@ -5,21 +5,27 @@
 #ifndef INC_GUARD_DEFINITIONS
 #define INC_GUARD_DEFINITIONS
 
+// define the board rev - 1 has only one LED, 2 has two LED
+//#define BRD_REV 1
+//#define BRD_REV 2
 
 // Update these when releasing new version
 #define MAJOR_VERSION_STR "1"
 #define MINOR_VERSION_STR "5"
-#define FIX_VERSION_STR   "0"
-#define BUILD_VERSION_STR "4"
+#define FIX_VERSION_STR   "2"
+#define BUILD_VERSION_STR "0"
 
-#define MAJOR_VERSION_INT 1
-#define MINOR_VERSION_INT 5
-#define FIX_VERSION_INT   0
-#define BUILD_VERSION_INT 4
+#define MAJOR_VERSION_EEPROM 1
+#define MAJOR_VER_EEPROM_STR "1"
+#define MINOR_VERSION_EEPROM 5
+#define MINOR_VER_EEPROM_STR "5"
 
-#define BUILD_DATE "230507"
+
+
+#define BUILD_DATE "230630"
 
 #define GEOSYNC_MANUF_ID 99
+
 
 //#define PRODUCT_NAME "      TB-Valhalla     "
 #define PRODUCT_NAME "     TB-Sequencer     "
@@ -65,9 +71,13 @@
 #define RUN_IN_PIN PIND
 #define RUN_IN_DDR DDD7
 
-// 8 unused
+#define LED_BOOT 8            // DIP28 pin 14 
+#define LED_BOOT_PORT PORTB
+#define LED_BOOT_BIT PB0
+#define LED_BOOT_PIN PINB
+#define LED_BOOT_DDR DDB0
 
-#define LED 9             // DIP28 pin 15 
+#define LED 9                 // DIP28 pin 15 
 #define LED_PORT PORTB
 #define LED_BIT PB1
 #define LED_PIN PINB
@@ -97,7 +107,13 @@
 #define ENC_BUT_PIN PINC
 #define ENC_BUT_DDR DDC2
 
-// 17 unused
+// 17 unused in REV1
+#define REV_IN 17
+#define REV_IN_PORT PORTC
+#define REV_IN_BIT PC3
+#define REV_IN_PIN PINC
+#define REV_IN_DDR DDDC3
+
 #define DISP_SDA 18   // 27  A4
 #define DISP_SCL 19   // 28  A5
 

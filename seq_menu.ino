@@ -1,28 +1,32 @@
 
 
 void updateEncoderPos() {
-    static int encoderA, encoderB, encoderA_prev;   
+    static int encoderA, encoderB, encoderA_prev;
 
-    encoderA = ( ENC_A_PIN & bit(ENC_A_BIT) ) == 0;
-    encoderB = ( ENC_B_PIN & bit(ENC_B_BIT) ) == 0;
+    // Debounce the encoder rotation by 10ms to de-glitch
+    if( encoderTimer - millis() > 10 ) {
+      encoderTimer = millis();
 
-    //encoderA = digitalRead(ENC_A); 
-    //encoderB = digitalRead(ENC_B);
+      encoderA = ( ENC_A_PIN & bit(ENC_A_BIT) ) == 0;
+      encoderB = ( ENC_B_PIN & bit(ENC_B_BIT) ) == 0;
+      //encoderA = digitalRead(ENC_A); 
+      //encoderB = digitalRead(ENC_B);
       
-    if( ( !encoderA ) && ( encoderA_prev ) ){ // A has gone from high to low 
-      if( is_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED ) ) { // Update encoder position
-        encoderPosPrev = encoderPos;
-        encoderB ? encoderPos++ : encoderPos--;  
+      if( ( !encoderA ) && ( encoderA_prev ) ){ // A has gone from high to low 
+        if( is_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED ) ) { // Update encoder position
+          encoderPosPrev = encoderPos;
+          encoderB ? encoderPos++ : encoderPos--;  
+        }
+        else { 
+          set_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED );
+          encoderPos = 0;  // Reset encoder position if highlight timed out
+          encoderPosPrev = 0;
+        }
+        highlightTimer = millis(); 
+        updateSelection();
       }
-      else { 
-        set_true( &bitmap2, BIT2_HIGHLIGHT_ENABLED );
-        encoderPos = 0;  // Reset encoder position if highlight timed out
-        encoderPosPrev = 0;
-      }
-      highlightTimer = millis(); 
-      updateSelection();
-    }
-    encoderA_prev = encoderA;     
+      encoderA_prev = encoderA; 
+    }    
 }
 
 uint8_t tmp;
