@@ -167,7 +167,7 @@ void loop() {
         dac.setVoltageA( 0 );
         dac.updateDAC();
         GATE_PORT &= ~( 1 << GATE_BIT );
-        NOP;
+        //NOP;
         //digitalWrite( GATE, LOW );
 
         set_true( &bitmap, BIT_DISPLAY_CLEARED );
@@ -227,7 +227,7 @@ void loop() {
             // can modify gateDelay via menu - approx 500 us seems about right
             if( tick_per_step == 1 && !is_true( &bitmap, BIT_SLIDING ) ) {
               GATE_PORT &= ~( 1 << GATE_BIT );
-              NOP;
+              //NOP;
               
               //digitalWrite( GATE, LOW ); 
               delayMicroseconds( gateDelay ); 
@@ -248,7 +248,7 @@ void loop() {
         // turn off gate one tick before next step if we aren't is_true( BIT_SLIDING ) and have interim ticks
         } else if( !is_true( &bitmap, BIT_SLIDING ) && cv_step_length == 1 && tick_per_step != 1 ) {
           GATE_PORT &= ~( 1 << GATE_BIT );
-          NOP;
+          //NOP;
           //digitalWrite( GATE, LOW );
 
         // if we are sliding, check if we are into the slide ticks 
@@ -311,6 +311,17 @@ void loop() {
         }
         break;
 
+      case midi::Stop:
+
+        set_false( &bitmap, BIT_PLAYING ); // we stop playing a sequence
+        dac.setVoltageA( 0 );
+        dac.updateDAC();
+        GATE_PORT &= ~( 1 << GATE_BIT );
+        //digitalWrite( GATE, LOW );
+        set_true( &bitmap, BIT_DISPLAY_CLEARED );
+        display.clear();
+        break;
+
       case midi::Start:
         
         step_i = STEP_START;
@@ -324,22 +335,11 @@ void loop() {
         slide_div = isSlidePossible(); // slide_type, for how many sub-steps to spread slide over
         break;
 
-      case midi::Stop:
-
-        set_false( &bitmap, BIT_PLAYING ); // we stop playing a sequence
-        dac.setVoltageA( 0 );
-        dac.updateDAC();
-        GATE_PORT &= ~( 1 << GATE_BIT );
-        //digitalWrite( GATE, LOW );
-        set_true( &bitmap, BIT_DISPLAY_CLEARED );
-        display.clear();
-        break;
-
       case midi::Clock:
 
         if( clock_count == 0 ) {
           CLOCK_PORT |= ( 1 << CLOCK_BIT );
-          NOP;
+          //NOP;
           //digitalWrite( CLOCK, HIGH );  // Start clock pulse
           clock_timer = millis();
         }
@@ -348,12 +348,12 @@ void loop() {
           set_false( &bitmap, BIT_STARTING ); // we got the first tick after start command, lets go!
           displayMsgPlaying( is_true( &bitmap, BIT_CV_PLAYING ) );
           playNextNote();
+        } else {
+           // inc/dec counters for this tick
+          clock_count++;
+          tick_count++;
+          step_length--;
         }
-
-        // inc/dec counters for this tick
-        clock_count++;
-        tick_count++;
-        step_length--;
 
         // MIDI timing clock sends 24 pulses per quarter note.  
         // Sent pulse only once every 24 pulses
@@ -369,7 +369,7 @@ void loop() {
               //we have reached the end of this note
               // turn off accent as we are on to a new step, will get turned on if needed by playNextNote
               ACCENT_PORT &= ~( 1 << ACCENT_BIT );
-              NOP;
+              //NOP;
               //digitalWrite( ACCENT, LOW );
               playNextNote();  // increments step_i at end of function
             } else {
@@ -384,7 +384,7 @@ void loop() {
         // turn off gate one tick before next step if we aren't sliding
         if( is_true( &bitmap, BIT_PLAYING ) && !is_true( &bitmap, BIT_SLIDING ) && step_length == 1 ) {
           GATE_PORT &= ~( 1 << GATE_BIT );
-          NOP;
+          //NOP;
           //digitalWrite( GATE, LOW );
 
         // if we are sliding, check if we are into the slide ticks 
@@ -451,7 +451,7 @@ void playTopNote() {
   } else {
     // All notes are off, turn off gate
     GATE_PORT &= ~( 1 << GATE_BIT );
-    NOP;
+    //NOP;
     //digitalWrite( GATE, LOW );
   }
 }
@@ -472,7 +472,7 @@ void playBottomNote() {
   } else {
     // All notes are off, turn off gate
     GATE_PORT &= ~( 1 << GATE_BIT );
-    NOP;
+    //NOP;
     //digitalWrite( GATE, LOW );
   }
 }
@@ -488,7 +488,7 @@ void playLastNote() {
     }
   }
   GATE_PORT &= ~( 1 << GATE_BIT );
-  NOP;
+  //NOP;
   //digitalWrite( GATE, LOW );  // All notes are off
 }
 
@@ -508,7 +508,7 @@ void playNextNote() {
   cv_step_length = ( my_div( step_length, 6 ) * tick_per_step );    // same, but for CV ticks
 
   if( !rest ) {
-    if( accent ) { ACCENT_PORT |= ( 1 << ACCENT_BIT ); NOP; } //digitalWrite( ACCENT, HIGH ); }
+    if( accent ) { ACCENT_PORT |= ( 1 << ACCENT_BIT ); } //digitalWrite( ACCENT, HIGH ); }
   
     if( slide ) {
       set_true( &bitmap, BIT_SLIDING );
@@ -549,7 +549,7 @@ void playNextNote() {
 
   } else { // rest
     GATE_PORT &= ~( 1 << GATE_BIT );
-    NOP;
+    //NOP;
     //digitalWrite( GATE, LOW );
     // FIX ME ???
     //delayMicroseconds( gateDelay );
