@@ -57,6 +57,7 @@
  */
 
 
+
 /* ==========================================================================================
  * SETUP
  * ========================================================================================== */
@@ -75,7 +76,7 @@ void setup() {
 
   pinInit();                      // PIN modes and setup
   encoderInit();                  // Configure the Encoder
-  displayInit();                  // Initialise display and show splash
+  displayInit();                  // Initialise display and show splash - comment out if no display debug
   eepromInit();                   // Check EEPROM is inited & setup defaults if its valid
   midiInit();                     // Midi configuration
   dacInit();                      // DAC configuration
@@ -99,6 +100,16 @@ void setup() {
 
 void loop() {
 
+#ifdef DEBUG
+  // DEBUG
+  static bool done = 0;
+  if( !done ) {
+    // put any debug calls here
+    done = 1;
+  }
+  // END-DEBUG
+#endif
+
   uint8_t noteMsg;
   static unsigned long clock_timer = 0, clock_timeout = 0, mod_timer = 0, display_timer = 0;
   static unsigned int clock_count = 0, tick_count = 0, cv_clock_count = 0;
@@ -117,7 +128,7 @@ void loop() {
     } else if( is_true( &bitmap, BIT_DISPLAY_CLEARED ) ) {
       displayHomePage();
       set_false( &bitmap, BIT_DISPLAY_CLEARED );
-    }
+    } 
   }
 
   // Set trigger low after 20 msec  
@@ -313,26 +324,30 @@ void loop() {
 
       case midi::Stop:
 
-        set_false( &bitmap, BIT_PLAYING ); // we stop playing a sequence
-        dac.setVoltageA( 0 );
-        dac.updateDAC();
-        GATE_PORT &= ~( 1 << GATE_BIT );
-        //digitalWrite( GATE, LOW );
-        set_true( &bitmap, BIT_DISPLAY_CLEARED );
-        display.clear();
+        if( midiStartEnable ) {
+          set_false( &bitmap, BIT_PLAYING ); // we stop playing a sequence
+          dac.setVoltageA( 0 );
+          dac.updateDAC();
+          GATE_PORT &= ~( 1 << GATE_BIT );
+          //digitalWrite( GATE, LOW );
+          set_true( &bitmap, BIT_DISPLAY_CLEARED );
+          display.clear();
+        }
         break;
 
       case midi::Start:
-        
-        step_i = STEP_START;
-        set_true( &bitmap, BIT_PLAYING );        // we are playing a sequence
-        set_true( &bitmap, BIT_STARTING );       // set so we wait for next tick to actually start the seq
 
-        clock_count = 0;    // number of ticks since last quarter note (24 ppqn)
-        tick_count = 0;     // one step is 1/16 note - so tick_count up to 6 (6 ppstep)
-        step_length = 0;    // decrements, based on sequencer step length
-        tick_per_step = 6;  // MIDI 24 PPQN
-        slide_div = isSlidePossible(); // slide_type, for how many sub-steps to spread slide over
+        if( midiStartEnable ) {
+          step_i = STEP_START;
+          set_true( &bitmap, BIT_PLAYING );        // we are playing a sequence
+          set_true( &bitmap, BIT_STARTING );       // set so we wait for next tick to actually start the seq
+
+          clock_count = 0;    // number of ticks since last quarter note (24 ppqn)
+          tick_count = 0;     // one step is 1/16 note - so tick_count up to 6 (6 ppstep)
+          step_length = 0;    // decrements, based on sequencer step length
+          tick_per_step = 6;  // MIDI 24 PPQN
+          slide_div = isSlidePossible(); // slide_type, for how many sub-steps to spread slide over
+        }
         break;
 
       case midi::Clock:
@@ -417,6 +432,15 @@ void loop() {
           // if modDuration not infinite (0) then start timer, 
           //else leave mod_timer as zero so we never stop the CV output
           if( modDuration > 0 ) { mod_timer = millis(); };
+        } else if( midi_cc == midiCCaccent ) {
+          // Accent CC acts as a general purpose on/off switch - default CC 80
+          // Values < 64 - turn off
+          // Values > 63 - turn on
+          if( value > 63 ) {
+            ACCENT_PORT |= ( 1 << ACCENT_BIT );  //digitalWrite( ACCENT, HIGH ); }
+          } else {
+            ACCENT_PORT &= ~( 1 << ACCENT_BIT );
+          }
         }
         break; 
 
@@ -430,6 +454,8 @@ void loop() {
   }
   
 }
+
+
 
 /* ==========================================================================================
  * NOTE SELECT FUNCTIONS
@@ -794,6 +820,20 @@ void sysExInterpreter(byte* data, unsigned messageLength) {
           displayTestComms( 1 );
         } else {
           displayTestComms( 0 );
+        }
+        break;
+      }
+      case SET_ACCENT_CC : {
+        if( data[PARAM1] != midiCCaccent ) {
+          midiCCaccent = data[PARAM1];
+          saveByteSetting( EEPROM_AC_OFFSET, midiCCaccent, 0 );
+        }
+        break;
+      }
+      case SET_MIDI_START_ENABLE : {
+        if( data[PARAM1] != midiStartEnable ) {
+          midiStartEnable = data[PARAM1];
+          saveByteSetting( EEPROM_ST_OFFSET, midiStartEnable, 0 );
         }
         break;
       }

@@ -102,7 +102,7 @@ void updateMenu() {  // Called whenever button is pushed
         break;
 
       case MIDI_SETTINGS:
-        tmp = mod( encoderPos, 4 );
+        tmp = mod( encoderPos, 6 );
         switch( tmp ) {
           case 0:
             menu = NOTE_PRIORITY_SET;
@@ -114,13 +114,19 @@ void updateMenu() {  // Called whenever button is pushed
             menu = MIDI_CC_MOD_SET;
             break;
           case 3:
+            menu = MIDI_CC_ACCENT_SET;
+            break;
+          case 4:
+            menu = MIDI_START_ENABLE_SET;
+            break;
+          case 5:
             menu = SETTINGS;
             break;
         }
         break;
 
       case SEQ_SETTINGS:
-        tmp = mod( encoderPos, 5 );
+        tmp = mod( encoderPos, 6 );
         switch( tmp ) {
           case 0:
             menu = ACTIVATE_SEQ_SET;
@@ -133,6 +139,30 @@ void updateMenu() {  // Called whenever button is pushed
             break;
           case 3:
             menu = MODIFY_SEQ;
+            break;
+          case 4:
+            menu = SEQ_SETTINGS2;
+            break;
+          case 5:
+            menu = SETTINGS;
+            break;
+        }
+        break;
+
+      case SEQ_SETTINGS2:
+        tmp = mod( encoderPos, 5 );
+        switch( tmp ) {
+          case 0:
+            menu = SHIFT_SEQ_NOTE_LEFT;
+            break;
+          case 1:
+            menu = SHIFT_SEQ_NOTE_RIGHT;
+            break;
+          case 2:
+            menu = SHIFT_SEQ_ALL_LEFT;
+            break;
+          case 3:
+            menu = SHIFT_SEQ_ALL_RIGHT;
             break;
           case 4:
             menu = SETTINGS;
@@ -215,6 +245,16 @@ void updateMenu() {  // Called whenever button is pushed
         saveByteSetting( EEPROM_CC_OFFSET, midiCCnumber, 0 );
         break;
 
+      case MIDI_CC_ACCENT_SET: 
+        menu = MIDI_SETTINGS;
+        saveByteSetting( EEPROM_AC_OFFSET, midiCCaccent, 0 );
+        break;
+      
+      case MIDI_START_ENABLE_SET: 
+        menu = MIDI_SETTINGS;
+        saveByteSetting( EEPROM_ST_OFFSET, midiStartEnable, 0 );
+        break;
+
       // SEQ SETTINGS
           
       case ACTIVATE_SEQ_SET:
@@ -230,6 +270,28 @@ void updateMenu() {  // Called whenever button is pushed
       case SAVE_ACTIVE_SEQ_SET:
         menu = SEQ_SETTINGS;
         writeSequence( saveSlotMenu + 1, 1 );
+        break;
+
+      // SEQ_SETTINGS2
+
+      case SHIFT_SEQ_NOTE_LEFT:
+        menu = SEQ_SETTINGS2;
+        shiftSequence( shiftNumber, 1, 0 );
+        break;
+
+      case SHIFT_SEQ_NOTE_RIGHT:
+        menu = SEQ_SETTINGS2;
+        shiftSequence( shiftNumber, 0, 0 );
+        break;
+
+      case SHIFT_SEQ_ALL_LEFT:
+        menu = SEQ_SETTINGS2;
+        shiftSequence( shiftNumber, 1, 1 );
+        break;
+
+      case SHIFT_SEQ_ALL_RIGHT:
+        menu = SEQ_SETTINGS2;
+        shiftSequence( shiftNumber, 0, 1 );
         break;
 
       // FACTORY RESET     
@@ -557,11 +619,8 @@ void updateSelection() { // Called whenever encoder is turned
 
       break;
 
-    // MIDI_SETTINGS Menu
 
-    case MIDI_CHANNEL_SET:
-      if( menu == MIDI_CHANNEL_SET ) { midiChannel = mod(encoderPos, 16); }
-      // No break    
+    // MIDI_SETTINGS Menu
 
     case NOTE_PRIORITY_SET:
       if( menu == NOTE_PRIORITY_SET ) {
@@ -570,18 +629,30 @@ void updateSelection() { // Called whenever encoder is turned
             strcpy_P( priorityMenu, PSTR( "Last" ) );  // Last note
             break;
           case 1:
-            strcpy_P( priorityMenu, PSTR( "Top") );  // Top note
+            strcpy_P( priorityMenu, PSTR( "Top" ) );  // Top note
             break;
           case 2: 
             strcpy_P( priorityMenu, PSTR( "Botm" ) );  // Bottom note
             break;
         }
-      }
+      } 
       // No break
 
+    case MIDI_CHANNEL_SET:
+      if( menu == MIDI_CHANNEL_SET ) { midiChannel = mod(encoderPos, 16); }
+      // No break    
+
     case MIDI_CC_MOD_SET:
-      if( menu == MIDI_CC_MOD_SET ) { midiCCnumber = mod( encoderPos, 127); }
+      if( menu == MIDI_CC_MOD_SET ) { midiCCnumber = mod( encoderPos, 128); }
       // no break
+
+    case MIDI_CC_ACCENT_SET:
+      if( menu == MIDI_CC_ACCENT_SET ) { midiCCaccent = mod( encoderPos, 128); }
+      //no break
+    
+    case MIDI_START_ENABLE_SET:
+      if( menu == MIDI_START_ENABLE_SET ) { midiStartEnable = mod( encoderPos, 2); }
+      //no break
 
     case MIDI_SETTINGS:
 
@@ -590,20 +661,24 @@ void updateSelection() { // Called whenever encoder is turned
       display.println(F("   MIDI SETTINGS"));
       display.println();
 
-      if (menu == MIDI_SETTINGS) {
-        setHighlight(0,4);
+      if( menu == MIDI_SETTINGS ) {
+        setHighlight(0,6);
       } else {
         display.setInvertMode(0);
       }
-
       display.print(F("Note Priority   "));
       if( menu == NOTE_PRIORITY_SET ) { display.setInvertMode(1); }
       display.println( priorityMenu );
 
+      // For some reason, encoder values of 10 in settings below 
+      // add an extra NewLine to priorityMenu string?!
+      // So force the next line location here
+      display.setCursor(0,3);
+      
       // MIDI Channel Menu line
 
-      if (menu == MIDI_SETTINGS) {
-        setHighlight(1,4);
+      if( menu == MIDI_SETTINGS ) {
+        setHighlight(1,6);
       } else {
         display.setInvertMode(0);
       }
@@ -617,7 +692,7 @@ void updateSelection() { // Called whenever encoder is turned
       }
 
       if( menu == MIDI_SETTINGS ) {
-        setHighlight(2,4);
+        setHighlight(2,6);
       } else {
         display.setInvertMode(0);
       }
@@ -632,8 +707,34 @@ void updateSelection() { // Called whenever encoder is turned
         display.println(F(" "));
       }
 
+      if( menu == MIDI_SETTINGS ) {
+        setHighlight(3,6);
+      } else {
+        display.setInvertMode(0);
+      }
+      display.print(F("MIDI CC Accent  "));
+      if( menu == MIDI_CC_ACCENT_SET ) { display.setInvertMode(1); }
+      display.print( midiCCaccent );
+      if( midiCCaccent < 10 ) {
+        display.println(F("   "));
+      } else if( midiCCaccent < 100 ) {
+        display.println(F("  "));
+      } else {
+        display.println(F(" "));
+      }
+
+      if( menu == MIDI_SETTINGS ) {
+        setHighlight(4,6);
+      } else {
+        display.setInvertMode(0);
+      }
+      display.print(F("MIDI Strt Enble "));
+      if( menu == MIDI_START_ENABLE_SET ) { display.setInvertMode(1); }
+      display.print( midiStartEnable );
+      display.println(F("   "));
+
       if (menu == MIDI_SETTINGS ) { 
-        setHighlight(3,4);
+        setHighlight(5,6);
       } else {
         display.setInvertMode(0);
       } 
@@ -641,7 +742,7 @@ void updateSelection() { // Called whenever encoder is turned
           
       break;
 
-      // SEQ_SETTINGS Menu
+    // SEQ_SETTINGS Menu
 
     case ACTIVATE_SEQ_SET:
       if( menu == ACTIVATE_SEQ_SET ) {
@@ -684,7 +785,7 @@ void updateSelection() { // Called whenever encoder is turned
 
 
       if (menu == SEQ_SETTINGS) {
-        setHighlight(0,5);
+        setHighlight(0,6);
       } else {
         display.setInvertMode(0);
       }
@@ -696,7 +797,7 @@ void updateSelection() { // Called whenever encoder is turned
 
 
       if (menu == SEQ_SETTINGS) {
-        setHighlight(1,5);
+        setHighlight(1,6);
       } else {
         display.setInvertMode(0);
       }
@@ -708,7 +809,7 @@ void updateSelection() { // Called whenever encoder is turned
 
 
       if (menu == SEQ_SETTINGS) {
-        setHighlight(2,5);
+        setHighlight(2,6);
       } else {
         display.setInvertMode(0);
       }
@@ -720,22 +821,122 @@ void updateSelection() { // Called whenever encoder is turned
 
 
       if (menu == SEQ_SETTINGS) {
-        setHighlight(3,5);
+        setHighlight(3,6);
       } else {
         display.setInvertMode(0);
       }
       display.println(F("Edit Active Seq "));
       
 
+      if( menu == SEQ_SETTINGS ) {
+        setHighlight(4,6);
+      } else {
+        display.setInvertMode(0);
+      }                 
+      display.println(F("More Seq Settings"));
+
 
       if (menu == SEQ_SETTINGS ) { 
-        setHighlight(4,5);
+        setHighlight(5,6);
       } else {
         display.setInvertMode(0);
       } 
       display.println(F("Return          "));    
 
       break;
+
+    // SEQ_SETTINGS2
+
+    case SHIFT_SEQ_NOTE_LEFT:
+    case SHIFT_SEQ_NOTE_RIGHT:
+    case SHIFT_SEQ_ALL_LEFT:
+    case SHIFT_SEQ_ALL_RIGHT:
+      if( menu == SHIFT_SEQ_NOTE_LEFT  ||
+          menu == SHIFT_SEQ_NOTE_RIGHT ||
+          menu == SHIFT_SEQ_ALL_LEFT   ||
+          menu == SHIFT_SEQ_ALL_RIGHT ) {
+        shiftNumber = mod( encoderPos, 16 );  // 0-15
+      }
+      // No break
+    
+    case SEQ_SETTINGS2:
+
+      display.setCursor(0,0); 
+      display.setInvertMode(0);
+      display.println(F("  SEQ SETTINGS pg2"));
+      display.println();
+
+
+      if (menu == SEQ_SETTINGS2) {
+        setHighlight(0,5);
+      } else {
+        display.setInvertMode(0);
+      }
+      display.print(F("Shift Note Left "));
+      if( menu == SHIFT_SEQ_NOTE_LEFT ) { 
+        display.setInvertMode(1);
+        display.print( shiftNumber );
+      } else {
+        display.print( 0 );
+      }
+      display.println(F("  "));
+
+
+      if (menu == SEQ_SETTINGS2) {
+        setHighlight(1,5);
+      } else {
+        display.setInvertMode(0);
+      }
+      display.print(F("Shift Note Right"));
+      if( menu == SHIFT_SEQ_NOTE_RIGHT ) { 
+        display.setInvertMode(1);
+        display.print( shiftNumber );
+      } else {
+        display.print( 0 );
+      }
+      display.println(F("  "));
+
+
+      if (menu == SEQ_SETTINGS2) {
+        setHighlight(2,5);
+      } else {
+        display.setInvertMode(0);
+      }
+      
+      display.print(F("Shift ALL Left  "));
+      if( menu == SHIFT_SEQ_ALL_LEFT ) { 
+        display.setInvertMode(1);
+        display.print( shiftNumber );
+      } else {
+        display.print( 0 );
+      }
+      display.println(F("  "));
+
+
+      if (menu == SEQ_SETTINGS2) {
+        setHighlight(3,5);
+      } else {
+        display.setInvertMode(0);
+      }
+      display.print(F("Shift ALL Right "));
+      if( menu == SHIFT_SEQ_ALL_RIGHT ) { 
+        display.setInvertMode(1);
+        display.print( shiftNumber );
+      } else {
+        display.print( 0 );
+      }
+      display.println(F("  "));
+
+
+      if (menu == SEQ_SETTINGS2 ) { 
+        setHighlight(4,5);
+      } else {
+        display.setInvertMode(0);
+      } 
+      display.println(F("Return          "));     
+
+      break;
+      
 
     // ABOUT info
 

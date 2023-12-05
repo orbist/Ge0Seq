@@ -26,8 +26,10 @@
 //           21 - CV Trigger Duration - how long the trigger pulse lasts (20ms default)
 //           22 - CV Clock Duration - how long the clock out pulse lasts (20ms default)
 //           23 - MIDI CC number that is used as input to CV mod output
+//           24 - MIDI start/stop behaviour - enable or disable
+//           25 - MIDI CC to recieve accent triggers - default CC80 - values <64 off, >63 on
 //
-//        24-31 - unused
+//        26-31 - unused
 //
 //                (4 bytes each after here)
 //
@@ -75,6 +77,9 @@ void saveFloatSetting( uint8_t offset, float value, bool reboot );
 void clearSequence( uint8_t location, bool hdr );
 void writeSequence( uint8_t location, bool hdr );
 void readSequence(  uint8_t location, bool hdr );
+
+//memory sequence functions
+void shiftSequence( uint8_t delta, bool dir, bool all );
 
 
 #endif

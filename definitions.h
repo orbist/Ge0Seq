@@ -12,23 +12,24 @@
 // Update these when releasing new version
 #define MAJOR_VERSION_STR "1"
 #define MINOR_VERSION_STR "5"
-#define FIX_VERSION_STR   "2"
-#define BUILD_VERSION_STR "0"
+#define FIX_VERSION_STR   "4"
+#define BUILD_VERSION_STR "3"
+
+#define BUILD_DATE "231205"
 
 #define MAJOR_VERSION_EEPROM 1
-#define MAJOR_VER_EEPROM_STR "1"
 #define MINOR_VERSION_EEPROM 5
+
+#define MAJOR_VER_EEPROM_STR "1"
 #define MINOR_VER_EEPROM_STR "5"
 
 
 
-#define BUILD_DATE "230630"
-
 #define GEOSYNC_MANUF_ID 99
 
 
-//#define PRODUCT_NAME "      TB-Valhalla     "
-#define PRODUCT_NAME "     TB-Sequencer     "
+#define PRODUCT_NAME "    TB-Valhalla v3    "
+//#define PRODUCT_NAME "     TB-Sequencer     "
 #define BOOT_BANNER  "      BOOTING...      "
 
 // ------ Arduino pin numbers ------ //
@@ -134,7 +135,6 @@
 #define BIT2_HIGHLIGHT_ENABLED 0  // Flag indicating whether highighting should be enabled on menu
 #define BIT2_WAS_SLIDING       1  // was the last note a slide, so no trigger on this one
 
-
 // ------ Note Priority values ------ //
 
 #define NP_LAST 0
@@ -161,6 +161,7 @@
 // ------ EEPROM params ------ //
 
 #define EEPROM_INIT_TRUE 74         //flag to denote eeprom has been inited
+#define EEPROM_BLANK_BYTES 255      //contents of bytes when formatted
 
 #define EEPROM_INITED_OFFSET 0      //offset into eeprom for init byte
 
@@ -172,7 +173,9 @@
 #define EEPROM_TD_OFFSET 21         //offset into eeprom for CV trigDuration (ulong 4 bytes)
 #define EEPROM_CD_OFFSET 22         //offset into eeprom for CV clockDuration (ulong 4 bytes)
 #define EEPROM_CC_OFFSET 23         //offset into eeprom for MIDI CC number
-#define EEPROM_BYTE_NEXT_OFFSET 24  // unused 24-31
+#define EEPROM_ST_OFFSET 24         //offset into eeprom for MIDI start/stop enable
+#define EEPROM_AC_OFFSET 25         //offset into eeprom for MIDI CC for accent
+#define EEPROM_BYTE_NEXT_OFFSET 26  // unused 26-31
 
 // 4bytes each below here
 #define EEPROM_SF_OFFSET 32          //offset into eeprom for Scale Factor (float 4 bytes)
@@ -246,7 +249,9 @@ enum Command_t {
   SET_TRIG_DURATION = 11,  // new - gui sends 1 to 10 (x10) ms
   SET_CLOCK_DURATION = 12, // new - gui sends 1 to 10 (x10) ms
   SET_MOD_DURATION = 14,   // new - gui sends 0 to 100 (x10) ms ( 0 always on )
-  TEST_COMMS = 15
+  TEST_COMMS = 15,
+  SET_ACCENT_CC = 16,
+  SET_MIDI_START_ENABLE = 17
 };
 
 // the menu states
@@ -268,10 +273,17 @@ enum Menu {
   MIDI_CHANNEL_SET,             // MIDI settings
   NOTE_PRIORITY_SET,
   MIDI_CC_MOD_SET,
+  MIDI_CC_ACCENT_SET,
+  MIDI_START_ENABLE_SET,
   ACTIVATE_SEQ_SET,             // Sequence settings
   CLEAR_SEQ_SET,
   SAVE_ACTIVE_SEQ_SET,
   MODIFY_SEQ,
+  SEQ_SETTINGS2,                
+  SHIFT_SEQ_NOTE_LEFT,          // Sequence settings 2
+  SHIFT_SEQ_NOTE_RIGHT,
+  SHIFT_SEQ_ALL_LEFT,
+  SHIFT_SEQ_ALL_RIGHT,
   FACTORY_RESET_CONFIRM,
   EXIT
 } menu;

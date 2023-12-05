@@ -35,6 +35,8 @@ void eepromInit() {
     EEPROM.write( EEPROM_TD_OFFSET, 20 );
     EEPROM.write( EEPROM_CD_OFFSET, 20 );
     EEPROM.write( EEPROM_CC_OFFSET, 1);
+    EEPROM.write( EEPROM_ST_OFFSET, 1);
+    EEPROM.write( EEPROM_AC_OFFSET, 80);
 
     // longs and floats
     EEPROM.put( EEPROM_SF_OFFSET, 1.0f );
@@ -84,6 +86,21 @@ void eepromInit() {
     midiCCnumber = EEPROM.read( EEPROM_CC_OFFSET );
     if( midiCCnumber < 1 || midiCCnumber > 127 ) { valid = 0; }
 
+    // These two added in 1.5.3 release, but no need to blat EEPROM
+
+    midiStartEnable = EEPROM.read( EEPROM_ST_OFFSET );
+    if( midiStartEnable == EEPROM_BLANK_BYTES ) {
+      // previously blank space, so write it
+      EEPROM.write( EEPROM_ST_OFFSET, 1 );
+    }
+    if( midiStartEnable > 1 ) { valid = 0; }
+
+    midiCCaccent = EEPROM.read( EEPROM_AC_OFFSET );
+    if( midiCCaccent == EEPROM_BLANK_BYTES ) {
+      EEPROM.write( EEPROM_AC_OFFSET, 80 );
+    }
+    if( midiCCaccent < 1 || midiCCaccent > 127 ) { valid = 0; }
+
     // floats and longs
 
     EEPROM.get( EEPROM_SF_OFFSET, sfAdj );
@@ -125,7 +142,7 @@ void eepromClear() {
   do_some_flash(3);
   
   for (int i = 0; i < SEQ_END; i++) {
-    EEPROM.write(i, 255);
+    EEPROM.write( i, EEPROM_BLANK_BYTES );
   }
   displayDONE(1);
 }
@@ -187,6 +204,18 @@ void saveByteSetting( uint8_t offset, uint8_t value, bool reboot ) {
       display.println( value );
       break;
 
+    case EEPROM_ST_OFFSET:
+      display.println(F("Saved MIDI start"));
+      display.print(F("Enabled : "));
+      display.println( value );
+      break;
+
+    case EEPROM_AC_OFFSET:
+      display.println(F("Saved Accent trig"));
+      display.print(F("MIDI CC : "));
+      display.println( value );
+      break;
+
     default:
       display.println(F("ERROR BYTE NOT SAVE"));
       display.print( offset );
@@ -202,6 +231,7 @@ void saveByteSetting( uint8_t offset, uint8_t value, bool reboot ) {
     resetFunc();
   } else {
     display.clear();
+    set_true( &bitmap, BIT_DISPLAY_CLEARED );
   }
 
 }
@@ -245,6 +275,7 @@ void saveUlongSetting( uint8_t offset, unsigned long value, bool reboot ) {
     resetFunc();
   } else {
     display.clear();
+    set_true( &bitmap, BIT_DISPLAY_CLEARED );
   }
 }
 
@@ -277,6 +308,7 @@ void saveFloatSetting( uint8_t offset, float value, bool reboot ) {
     resetFunc();
   } else {
     display.clear();
+    set_true( &bitmap, BIT_DISPLAY_CLEARED );
   }
 }
 
@@ -465,4 +497,121 @@ void readSequence( uint8_t slot, bool hdr ) {
       set_true( &bitmap, BIT_DISPLAY_CLEARED );
     }
   }
+}
+
+// Function   :   shiftSequence( delta, direction, all )
+// Purpose    :   shift the active sequence by "delta" positions 
+//                if delta is more than the seq_length, return error
+//                dir - 1 = left, 0 = right
+//                all - 1 = all settings, 0 = notes only
+
+void shiftSequence( uint8_t delta, bool dir, bool all ) {
+
+  uint8_t i = 0;
+  uint8_t count = STEP_LEN;
+  uint8_t note = 36, length = 6, accent = 0, rest = 0, slide = 0;
+  uint8_t v = activeSeq.note[i];
+
+  displayHdr();
+
+  if( delta == 0 ) {
+    display.println(F("ERR: Cannot shift 0"));
+    delay(2000);
+    display.clear();
+    set_true( &bitmap, BIT_DISPLAY_CLEARED );
+    return;
+  }
+
+  while( v != LAST_STEP_NOTE ) {
+    i++;
+    if( i == STEP_END ) { 
+      v = LAST_STEP_NOTE; 
+    } else { 
+      v = activeSeq.note[i]; 
+    }
+  }
+  if( i != STEP_END ) { count = i; }
+
+  if( delta > count-1 ) {
+    display.println(F("ERR: Shift > seq_len"));
+    delay(2000);
+    display.clear();
+    set_true( &bitmap, BIT_DISPLAY_CLEARED );
+  } else {
+
+    display.print(F("Active steps: "));
+    display.println(count);
+    display.print(F("Shifting "));
+    if( all ) {
+      display.println(F("ALL by "));
+    } else {
+      display.println(F("Notes by"));
+    }
+    display.print(delta);
+    display.println(F(" steps to the"));
+    if( dir ) {
+      display.println(F("LEFT..."));
+    } else {
+      display.println(F("RIGHT..."));
+    }
+
+    delay(3000);
+
+   
+    // We are shifting the pattern, and end point is count-1
+    while( delta ) {
+      if( dir ) {
+        // Shifting left, save first step
+        note = activeSeq.note[0];
+        if( all ) {
+          length = activeSeq.length[0];
+          accent = activeSeq.accent[0];
+          rest   = activeSeq.rest[0];
+          slide  = activeSeq.slide[0];
+        }
+        for( i = 0; i < count-1; i++ ) {
+          activeSeq.note[i] = activeSeq.note[i+1];
+          if( all ) {
+            activeSeq.length[i] = activeSeq.length[i+1];
+            activeSeq.accent[i] = activeSeq.accent[i+1];
+            activeSeq.rest[i]   = activeSeq.rest[i+1];
+            activeSeq.slide[i]  = activeSeq.slide[i+1];
+          }
+        }
+        activeSeq.note[count-1]   = note;
+        if( all ) {
+          activeSeq.length[count-1] = length;
+          activeSeq.accent[count-1] = accent;
+          activeSeq.rest[count-1]   = rest;
+          activeSeq.slide[count-1]  = slide;
+        }
+      } else {
+        int j;
+        note = activeSeq.note[count-1];
+        if( all ) {
+          length = activeSeq.length[count-1];
+          accent = activeSeq.accent[count-1];
+          rest   = activeSeq.rest[count-1];
+          slide  = activeSeq.slide[count-1];
+        }
+        for( j = count - 1; j > 0; j-- ) {
+          activeSeq.note[j] = activeSeq.note[j-1];
+          if( all ) {
+            activeSeq.length[j] = activeSeq.length[j-1];
+            activeSeq.accent[j] = activeSeq.accent[j-1];
+            activeSeq.rest[j]   = activeSeq.rest[j-1];
+            activeSeq.slide[j]  = activeSeq.slide[j-1];
+          }
+        }
+        activeSeq.note[0]   = note;
+        if( all ) {
+          activeSeq.length[0] = length;
+          activeSeq.accent[0] = accent;
+          activeSeq.rest[0]   = rest;
+          activeSeq.slide[0]  = slide;
+        }
+      }
+      delta--;
+    } // while
+  } // count non-zero
 }

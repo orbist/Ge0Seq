@@ -54,7 +54,7 @@ void displayHomeHdr() {
   display.print(midiCCnumber);
   display.print(F(" NP:"));
   display.print(priorityMenu);
-  display.println(F(" "));
+  display.println(F("  "));
   display.setInvertMode(0);
   display.println();
     

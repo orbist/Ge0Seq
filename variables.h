@@ -20,6 +20,7 @@ Bounce encButton = Bounce();
 
 struct Seq_t {
   uint8_t note[STEP_LEN]   = {36,36,36,36,34,34,34,34,36,36,36,34,34,36,36,34};
+  //uint8_t note[STEP_LEN]   = {1,2,3,4,5,6,7,8,127,10,11,12,13,14,15,16};
   uint8_t length[STEP_LEN] = {6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6};
   uint8_t accent[STEP_LEN] = {0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,0};
   uint8_t rest[STEP_LEN]   = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -33,6 +34,7 @@ uint8_t activeSlot = 0;               // the last active slot (persists over reb
 uint8_t step_i = STEP_START;          // current step in playing activeSeq
 uint8_t step_length = 6;              // current step length
 uint8_t cv_step_length = 1;           // the cv step length based on cv ppqn
+uint8_t shiftNumber = 0;              // the number of steps to shift in menu
 
 // ------ Sliding Variables ------ //
 
@@ -54,6 +56,8 @@ unsigned long trigTimer = 0;                      // Needs to be global as used 
 uint8_t midiChannel = 10; // default is 0, but need a non zero here or gets optimised out of loop
 uint8_t notePriority = 0;
 uint8_t midiCCnumber = 1; // default to mod wheel
+uint8_t midiStartEnable = 1; // default to enabled
+uint8_t midiCCaccent = 80; // default CC for accent input
 
 // CV settings - set by editor, by menu and stored in eeprom
 uint8_t       cvClockPPQN = 4;        // CV Clock In PPQN

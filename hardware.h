@@ -6,6 +6,9 @@
 // initialise pins as required
 void pinInit( void );
 
+// initialise the encoder pins
+void encoderInit( void );
+
 // pin state transition helper - only react if state has changed from last known state
 inline bool pinHasChanged( uint8_t pin );
 

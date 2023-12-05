@@ -4,8 +4,8 @@
 #ifdef DEBUG
 // only include if DEBUG defined
 
-//#define DEBUG_FULL 1          // uncomment for full debug
-//#define DEBUG_SEQ_SLOTS 1     // uncomment for EEPROM read at start - uses 82bytes ~4% of memory!
+#define DEBUG_FULL 1          // uncomment for full debug
+#define DEBUG_SEQ_SLOTS 1     // uncomment for EEPROM read at start - uses 82bytes ~4% of memory!
 
 // set to run these at startup
 #define CLEAR_EEPROM 0
