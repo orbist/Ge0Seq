@@ -1,0 +1,19 @@
+GeoSeq - Firmware Release Notes
+
+v1.5.4.3 - Production Release
+
+* Added support for MIDI start/stop enable/disable
+* Added support for incoming MIDI CC to trigger accent on/off
+* Added support for shifting patterns left and right (just notes, or all step parameters)
+* Fixed blank screen after sending Global SysEx parameter set
+
+v1.5.2.0 - Beta 2 Release
+
+* Support for screen mounting on v1.5.1 PCBs
+* Fixed issue with slot 8 selection
+* Fixed issue with encoder bouncing/glitching
+* Added bootloader splash screen to signify bootloader is waiting for SysEx
+* New bootloader with display capabilities
+* Support for v1.5.1 PCBs with two LEDs, one for boot, one for ready - backwards compatible
+
+v1.5.0.4 - Initial Beta Test Release
